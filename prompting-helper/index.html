@@ -1,269 +1,273 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>LLM Prompt Engineering Workspace</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --border: #1f2933;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-
-      --role: #1e3a8a;
-      --task: #065f46;
-      --context: #374151;
-      --constraints: #7c2d12;
-      --output: #6d28d9;
-      --examples: #155e75;
-
-      --accent: #22d3ee;
-      --warn: #facc15;
-      --error: #f87171;
-      --success: #4ade80;
-    }
-
-    * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header h1 {
-      font-size: 18px;
-      margin: 0;
-    }
-
-    header span {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    main {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px;
-      padding: 16px;
-    }
-
-    .section {
-      border: 1px solid var(--border);
-      border-left: 6px solid;
-      background: var(--panel);
-      padding: 12px;
-      margin-bottom: 12px;
-      position: relative;
-    }
-
-    .section h2 {
-      margin: 0 0 6px;
-      font-size: 14px;
-    }
-
-    .section p.hint {
-      margin: 0 0 8px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .section textarea {
-      width: 100%;
-      min-height: 70px;
-      resize: vertical;
-      background: #020617;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px;
-      font-size: 13px;
-    }
-
-    .role { border-color: var(--role); }
-    .task { border-color: var(--task); }
-    .context { border-color: var(--context); }
-    .constraints { border-color: var(--constraints); }
-    .output { border-color: var(--output); }
-    .examples { border-color: var(--examples); }
-
-    .badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #020617;
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    aside {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      padding: 12px;
-    }
-
-    aside h3 {
-      margin-top: 0;
-      font-size: 14px;
-    }
-
-    .signal {
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .signal.good { color: var(--success); }
-    .signal.warn { color: var(--warn); }
-    .signal.bad { color: var(--error); }
-
-    .score {
-      margin-top: 12px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-      font-size: 13px;
-    }
-
-    button {
-      background: var(--accent);
-      border: none;
-      color: #020617;
-      font-weight: 600;
-      padding: 8px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      width: 100%;
-      margin-top: 12px;
-    }
-
-    pre {
-      background: #020617;
-      border: 1px solid var(--border);
-      padding: 8px;
-      font-size: 12px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>LLM Prompt Workspace</title>
+<style>
+:root {
+  --bg:#0f172a; --panel:#111827; --border:#1f2933; --text:#e5e7eb; --muted:#9ca3af;
+  --role:#1e3a8a; --task:#065f46; --context:#374151; --constraints:#7c2d12; --output:#6d28d9; --examples:#155e75;
+  --accent:#22d3ee; --warn:#facc15; --error:#f87171; --success:#4ade80;
+}
+*{box-sizing:border-box;font-family:system-ui, -apple-system, BlinkMacSystemFont, sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);}
+header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+header h1{font-size:18px;margin:0;}
+header select{background:#020617;color:#e5e7eb;border:1px solid var(--border);border-radius:4px;padding:4px;}
+main{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:16px;}
+.section{border:1px solid var(--border);border-left:6px solid;padding:12px;margin-bottom:12px;position:relative;background:var(--panel);}
+.section h2{margin:0 0 6px;font-size:14px;}
+.section p.hint{margin:0 0 8px;font-size:12px;color:var(--muted);}
+.section textarea{width:100%;min-height:70px;resize:vertical;background:#020617;border:1px solid var(--border);color:var(--text);padding:8px;font-size:13px;}
+.role{border-color:var(--role);}
+.task{border-color:var(--task);}
+.context{border-color:var(--context);}
+.constraints{border-color:var(--constraints);}
+.output{border-color:var(--output);}
+.examples{border-color:var(--examples);}
+.badge{position:absolute;top:8px;right:8px;font-size:11px;padding:2px 6px;border-radius:4px;background:#020617;border:1px solid var(--border);color:var(--muted);}
+aside{border:1px solid var(--border);background:var(--panel);padding:12px;}
+aside h3{margin-top:0;font-size:14px;}
+.signal{font-size:12px;margin-bottom:6px;}
+.signal.good{color:var(--success);}
+.signal.warn{color:var(--warn);}
+.signal.bad{color:var(--error);}
+.score{margin-top:12px;padding-top:8px;border-top:1px solid var(--border);font-size:13px;}
+button{background:var(--accent);border:none;color:#020617;font-weight:600;padding:6px 8px;cursor:pointer;border-radius:4px;margin-top:4px;}
+pre{background:#020617;border:1px solid var(--border);padding:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;}
+input,textarea,select{outline:none;}
+.prompt-meta{display:flex;gap:6px;margin-bottom:6px;}
+.prompt-meta input{flex:1;padding:4px;font-size:12px;background:#020617;color:var(--text);border:1px solid var(--border);border-radius:4px;}
+.prompt-list{max-height:200px;overflow-y:auto;margin-top:6px;}
+.prompt-item{padding:6px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.prompt-item:hover{background:#1f2933;}
+.prompt-item.selected{background:#065f46;color:#fff;}
+.prompt-actions{display:flex;gap:4px;}
+.prompt-actions button{flex:none;padding:2px 4px;font-size:11px;margin-top:0;}
+</style>
 </head>
 <body>
-
 <header>
-  <h1>Prompt Engineering Workspace</h1>
-  <span>Structured • Guided • Adaptive</span>
-</header>
+  <h1 id="headerTitle">Prompt Engineering Workspace</h1>
+  <div>
+    <select id="langSwitch">
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+    </select>
 
+  </div>
+</header>
 <main>
   <section>
     <div class="section role">
-      <h2>Role / Persona</h2>
+      <h2 data-key="roleTitle">Role / Persona</h2>
       <span class="badge">Authority</span>
-      <p class="hint">Define who the model is and its level of expertise.</p>
-      <textarea id="role" placeholder="You are a senior backend engineer specializing in Spring Boot and distributed systems."></textarea>
+      <p class="hint" data-key="roleHint">Define who the model is and its expertise.</p>
+      <textarea id="role" placeholder="You are a senior backend engineer specializing in Spring Boot."></textarea>
     </div>
-
     <div class="section task">
-      <h2>Task / Objective</h2>
+      <h2 data-key="taskTitle">Task / Objective</h2>
       <span class="badge">Action</span>
-      <p class="hint">Specify exactly what the model must do.</p>
-      <textarea id="task" placeholder="Design a REST API architecture for a multi-tenant SaaS application."></textarea>
+      <p class="hint" data-key="taskHint">Specify exactly what the model must do.</p>
+      <textarea id="task" placeholder="Design a REST API architecture for a multi-tenant SaaS app."></textarea>
     </div>
-
     <div class="section context">
-      <h2>Context / Input</h2>
+      <h2 data-key="contextTitle">Context / Input</h2>
       <span class="badge">Data</span>
-      <p class="hint">Provide domain context, constraints, or reference material.</p>
-      <textarea id="context" placeholder="The system serves enterprise customers, uses PostgreSQL, and must support horizontal scaling."></textarea>
+      <p class="hint" data-key="contextHint">Provide domain context, constraints, or reference material.</p>
+      <textarea id="context" placeholder="System serves enterprise customers, uses PostgreSQL, supports horizontal scaling."></textarea>
     </div>
-
     <div class="section constraints">
-      <h2>Constraints / Rules</h2>
+      <h2 data-key="constraintsTitle">Constraints / Rules</h2>
       <span class="badge">Guardrails</span>
-      <p class="hint">What must or must not be done.</p>
+      <p class="hint" data-key="constraintsHint">What must or must not be done.</p>
       <textarea id="constraints" placeholder="Avoid vendor-specific services. Prefer clean architecture."></textarea>
     </div>
-
     <div class="section output">
-      <h2>Output Format</h2>
+      <h2 data-key="outputTitle">Output Format</h2>
       <span class="badge">Structure</span>
-      <p class="hint">Explicitly define the response structure.</p>
-      <textarea id="output" placeholder="Return a bullet list with architecture layers and a sequence diagram description."></textarea>
+      <p class="hint" data-key="outputHint">Define the response structure explicitly.</p>
+      <textarea id="output" placeholder="Return a bullet list with architecture layers and sequence diagram description."></textarea>
     </div>
-
     <div class="section examples">
-      <h2>Examples (Optional)</h2>
+      <h2 data-key="examplesTitle">Examples (Optional)</h2>
       <span class="badge">Calibration</span>
-      <p class="hint">Few-shot examples dramatically improve accuracy.</p>
+      <p class="hint" data-key="examplesHint">Few-shot examples improve accuracy.</p>
       <textarea id="examples" placeholder="Input: ... Output: ..."></textarea>
     </div>
   </section>
-
   <aside>
-    <h3>Prompt Quality Signals</h3>
+    <h3 data-key="qualityTitle">Prompt Quality & Live Preview</h3>
     <div id="signals"></div>
-
-    <div class="score">
-      <strong>Prompt Quality Score:</strong>
-      <span id="score">0%</span>
-    </div>
-
-    <button onclick="generatePrompt()">Generate Final Prompt</button>
-
+    <div class="score"><strong data-key="scoreLabel">Prompt Quality Score:</strong> <span id="score">0%</span></div>
     <pre id="finalPrompt"></pre>
+    <div class="prompt-meta">
+      <input type="text" id="promptName" placeholder="Prompt Name">
+      <input type="text" id="promptDesc" placeholder="Description">
+    </div>
+        <button id="newPromptBtn" style="margin-left:6px;">New Prompt</button>
+    <button id="savePromptBtn" data-key="saveBtn">Save Prompt</button>
+    <div class="prompt-list" id="promptList"></div>
   </aside>
 </main>
-
 <script>
-  const fields = ["role", "task", "context", "constraints", "output", "examples"];
+const fields=["role","task","context","constraints","output","examples"];
+const signalsEl=document.getElementById("signals");
+const scoreEl=document.getElementById("score");
+const finalPromptEl=document.getElementById("finalPrompt");
+const promptListEl=document.getElementById("promptList");
+const nameInput=document.getElementById("promptName");
+const descInput=document.getElementById("promptDesc");
+const langSwitch=document.getElementById("langSwitch");
+const newPromptBtn=document.getElementById("newPromptBtn");
+let selectedPromptId=null;
+let unsavedChanges=false;
 
-  function generatePrompt() {
-    let filled = 0;
-    let signals = [];
-    let outputText = "";
-
-    fields.forEach(id => {
-      const value = document.getElementById(id).value.trim();
-      if (value.length > 0) filled++;
-
-      if ((id === "role" || id === "task") && value.length === 0) {
-        signals.push({ type: "bad", text: `${id} is missing (critical)` });
-      }
-
-      if (id === "output" && !value.toLowerCase().includes("format")) {
-        signals.push({ type: "warn", text: "Output format could be more explicit" });
-      }
-
-      if (value.length > 0) {
-        outputText += `${id.toUpperCase()}:\n${value}\n\n`;
-      }
-    });
-
-    if (signals.length === 0) {
-      signals.push({ type: "good", text: "Prompt structure looks strong" });
-    }
-
-    const score = Math.round((filled / fields.length) * 100);
-
-    document.getElementById("signals").innerHTML =
-      signals.map(s => `<div class="signal ${s.type}">• ${s.text}</div>`).join("");
-
-    document.getElementById("score").innerText = score + "%";
-    document.getElementById("finalPrompt").innerText = outputText.trim();
+// Translation dictionary
+const i18n={
+  en:{
+    headerTitle:"Prompt Engineering Workspace",
+    roleTitle:"Role / Persona", roleHint:"Define who the model is and its expertise.",
+    taskTitle:"Task / Objective", taskHint:"Specify exactly what the model must do.",
+    contextTitle:"Context / Input", contextHint:"Provide domain context, constraints, or reference material.",
+    constraintsTitle:"Constraints / Rules", constraintsHint:"What must or must not be done.",
+    outputTitle:"Output Format", outputHint:"Define the response structure explicitly.",
+    examplesTitle:"Examples (Optional)", examplesHint:"Few-shot examples improve accuracy.",
+    qualityTitle:"Prompt Quality & Live Preview",
+    scoreLabel:"Prompt Quality Score:", saveBtn:"Save Prompt",
+    nameRequired:"Name required",
+    unsavedConfirm:"You have unsaved changes. Continue and lose changes?"
+  },
+  de:{
+    headerTitle:"Prompt-Arbeitsbereich",
+    roleTitle:"Rolle / Persona", roleHint:"Definiere, wer das Modell ist und seine Expertise.",
+    taskTitle:"Aufgabe / Ziel", taskHint:"Gib genau an, was das Modell tun soll.",
+    contextTitle:"Kontext / Eingabe", contextHint:"Gib den Domänenkontext, Einschränkungen oder Referenzen an.",
+    constraintsTitle:"Einschränkungen / Regeln", constraintsHint:"Was getan werden muss oder nicht.",
+    outputTitle:"Ausgabeformat", outputHint:"Definiere die Struktur der Antwort eindeutig.",
+    examplesTitle:"Beispiele (Optional)", examplesHint:"Few-shot-Beispiele verbessern die Genauigkeit.",
+    qualityTitle:"Prompt-Qualität & Live-Vorschau",
+    scoreLabel:"Prompt-Qualitätswert:", saveBtn:"Prompt speichern",
+    nameRequired:"Name erforderlich",
+    unsavedConfirm:"Es gibt ungespeicherte Änderungen. Fortfahren und Änderungen verlieren?"
   }
-</script>
+};
 
+// Language switch
+function updateLanguage(lang){
+  document.querySelectorAll("[data-key]").forEach(el=>{
+    const key=el.getAttribute("data-key");
+    if(i18n[lang][key]) el.textContent=i18n[lang][key];
+  });
+}
+langSwitch.addEventListener("change",()=>updateLanguage(langSwitch.value));
+updateLanguage(langSwitch.value);
+
+// Live preview & signals
+function updatePreview(){
+  unsavedChanges=true;
+  let filled=0, signals=[], outputText="";
+  fields.forEach(id=>{
+    const value=document.getElementById(id).value.trim();
+    if(value.length>0) filled++;
+    if((id==="role"||id==="task")&&value.length===0) signals.push({type:"bad",text:`${id} is missing (critical)`});
+    if(id==="output"&&!value.toLowerCase().includes("format")) signals.push({type:"warn",text:"Output format could be more explicit"});
+    if(value.length>0) outputText+=`${id.toUpperCase()}:\n${value}\n\n`;
+  });
+  if(signals.length===0) signals.push({type:"good",text:"Prompt structure looks strong"});
+  const score=Math.round((filled/fields.length)*100);
+  signalsEl.innerHTML=signals.map(s=>`<div class="signal ${s.type}">• ${s.text}</div>`).join("");
+  scoreEl.innerText=score+"%";
+  finalPromptEl.innerText=outputText.trim();
+}
+
+// LocalStorage multiple prompts
+function loadPrompts(){
+  const data=JSON.parse(localStorage.getItem("prompts")||"{}");
+  promptListEl.innerHTML="";
+  for(const id in data){
+    const p=data[id];
+    const div=document.createElement("div");
+    div.className="prompt-item"+(selectedPromptId===id?" selected":"");
+    div.innerHTML=`<span>${p.name}</span>
+      <div class="prompt-actions">
+        <button onclick="editPrompt('${id}')">✎</button>
+        <button onclick="deletePrompt('${id}')">🗑</button>
+      </div>`;
+    div.onclick=()=>loadPrompt(id);
+    promptListEl.appendChild(div);
+  }
+}
+
+function loadPrompt(id){
+  const data=JSON.parse(localStorage.getItem("prompts")||"{}");
+  const p=data[id];
+  if(!p) return;
+  selectedPromptId=id;
+  fields.forEach(f=>document.getElementById(f).value=p[f]||"");
+  nameInput.value=p.name;
+  descInput.value=p.description||"";
+  updatePreview();
+  unsavedChanges=false;
+  loadPrompts();
+}
+
+function savePrompt(){
+  const name=nameInput.value.trim();
+  if(!name){alert(i18n[langSwitch.value].nameRequired);return;}
+  const data=JSON.parse(localStorage.getItem("prompts")||"{}");
+  const id=selectedPromptId || "p"+Date.now();
+  const obj={name, description: descInput.value.trim()};
+  fields.forEach(f=>obj[f]=document.getElementById(f).value);
+  data[id]=obj;
+  localStorage.setItem("prompts", JSON.stringify(data));
+  selectedPromptId=id;
+  unsavedChanges=false;
+  loadPrompts();
+}
+
+function deletePrompt(id){
+  const data=JSON.parse(localStorage.getItem("prompts")||"{}");
+  delete data[id];
+  localStorage.setItem("prompts", JSON.stringify(data));
+  if(selectedPromptId===id){selectedPromptId=null;fields.forEach(f=>document.getElementById(f).value="");nameInput.value="";descInput.value="";unsavedChanges=false;}
+  loadPrompts();
+}
+
+function editPrompt(id){
+  if(unsavedChanges){
+    if(!confirm(i18n[langSwitch.value].unsavedConfirm)) return;
+  }
+  loadPrompt(id);
+}
+
+function newPrompt(){
+  if(unsavedChanges){
+    if(!confirm(i18n[langSwitch.value].unsavedConfirm)) return;
+  }
+  selectedPromptId=null;
+  fields.forEach(f=>document.getElementById(f).value="");
+  nameInput.value="";
+  descInput.value="";
+  updatePreview();
+  unsavedChanges=false;
+}
+
+window.addEventListener("beforeunload",(e)=>{
+  if(unsavedChanges){
+    e.preventDefault();
+    e.returnValue='';
+  }
+});
+
+// Event listeners
+fields.forEach(f=>document.getElementById(f).addEventListener("input", updatePreview));
+document.getElementById("savePromptBtn").addEventListener("click", savePrompt);
+newPromptBtn.addEventListener("click", newPrompt);
+
+// Initialize
+updatePreview();
+loadPrompts();
+</script>
 </body>
 </html>
