@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini Persistent Editor</title>
+<style>
+html, body { height: 100%; margin:0; font-family: "Fira Code", monospace; background:#1e1e1e; color:#d4d4d4; }
+#tabs { display:flex; background:#2c2c2c; padding:0 10px; user-select:none; overflow-x:auto; }
+.tab { padding:8px 15px; cursor:pointer; border-right:1px solid #444; white-space:nowrap; display:flex; align-items:center; position:relative; }
+.tab.active { background:#1e1e1e; font-weight:bold; }
+.tab .close { margin-left:8px; cursor:pointer; color:#888; }
+#editor { width:100%; height:calc(100% - 40px); background:#1e1e1e; color:#d4d4d4; border:none; resize:none; font-family:"Fira Code", monospace; font-size:14px; padding:10px; outline:none; box-sizing:border-box; }
+#search-bar, #picker-overlay { position:absolute; display:none; top:50px; right:20px; background:#2c2c2c; border:1px solid #444; color:#fff; padding:5px; font-family:monospace; }
+#search-bar input, #picker-overlay input { background:#1e1e1e; border:none; color:#d4d4d4; outline:none; padding:3px 5px; width:200px; }
+#picker-overlay { top:30%; left:50%; transform:translateX(-50%); width:300px; max-height:300px; overflow-y:auto; padding:10px; border-radius:5px; }
+#picker-overlay div { padding:5px; cursor:pointer; border-radius:3px; }
+#picker-overlay div.selected { background:#007acc; }
+
+  /* Container */
+  #top-right-buttons {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    display: flex;
+    gap: 6px;
+    z-index: 1000;
+  }
+
+  /* Buttons */
+  .top-btn {
+    background-color: #2c2c2c;
+    color: #d4d4d4;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  /* Hover effect */
+  .top-btn:hover {
+    background-color: #3a3a3a;
+    transform: scale(1.05);
+  }
+
+  /* Active overlay state (optional highlight) */
+  .top-btn.active {
+    background-color: #007acc;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div id="tabs"></div>
+
+<div id="top-right-buttons">
+  <button id="btn-search" title="Search (Ctrl+K)" class="top-btn">🔍</button>
+  <button id="btn-picker" title="Open File Picker (Ctrl+E)" class="top-btn">📄</button>
+  <button id="btn-help" title="Keyboard Shortcuts" class="top-btn">❓</button>
+</div>
+
+<!-- Help overlay -->
+<div id="help-overlay" style="display:none; position:absolute; top:20%; left:50%; transform:translateX(-50%); background:#2c2c2c; color:#fff; padding:15px; border-radius:8px; max-width:400px; font-family:monospace; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+  <h3 style="margin-top:0; text-align:center;">Keyboard Shortcuts</h3>
+  <ul style="list-style:none; padding-left:0;">
+    <li>alt+N : New Tab</li>
+    <li>Ctrl+S : Save Tab</li>
+    <li>alt+W : Close Tab</li>
+    <li>F2 : Rename Tab</li>
+    <li>Ctrl+K : Search in Notes</li>
+    <li>Ctrl+E : Open File Picker</li>
+    <li>Esc : Close Search / Picker / Help</li>
+  </ul>
+</div>
+<textarea id="editor" spellcheck="false"></textarea>
+
+<div id="search-bar">Search: <input type="text" id="search-input"></div>
+<div id="picker-overlay">
+  <input type="text" id="picker-input" placeholder="Type to filter..." />
+  <div id="picker-list"></div>
+</div>
+
+<script>
+/* --- Editor State --- */
+let tabs = [];
+let activeTabId = null;
+
+/* --- DOM --- */
+const tabsContainer = document.getElementById('tabs');
+const editor = document.getElementById('editor');
+const searchBar = document.getElementById('search-bar');
+const searchInput = document.getElementById('search-input');
+const pickerOverlay = document.getElementById('picker-overlay');
+const pickerInput = document.getElementById('picker-input');
+const pickerList = document.getElementById('picker-list');
+
+
+/* --- Top Right Buttons --- */
+const btnSearch = document.getElementById('btn-search');
+const btnPicker = document.getElementById('btn-picker');
+const btnHelp = document.getElementById('btn-help');
+const helpOverlay = document.getElementById('help-overlay');
+
+/* --- Top Right Buttons with Toggle --- */
+btnSearch.onclick = () => {
+  if (searchBar.style.display === 'block') {
+    searchBar.style.display = 'none';
+  } else {
+    searchBar.style.display = 'block';
+    searchInput.focus();
+  }
+};
+
+btnPicker.onclick = () => {
+  if (pickerOverlay.style.display === 'block') {
+    pickerOverlay.style.display = 'none';
+  } else {
+    openPicker();
+  }
+};
+
+btnHelp.onclick = () => {
+  if (helpOverlay.style.display === 'block') {
+    helpOverlay.style.display = 'none';
+  } else {
+    helpOverlay.style.display = 'block';
+  }
+};
+
+
+/* --- LocalStorage Helpers --- */
+function saveState() {
+  localStorage.setItem('editor-tabs', JSON.stringify(tabs));
+  localStorage.setItem('editor-activeTabId', activeTabId);
+}
+
+function loadState() {
+  const savedTabs = localStorage.getItem('editor-tabs');
+  const savedActive = localStorage.getItem('editor-activeTabId');
+  if (savedTabs) tabs = JSON.parse(savedTabs);
+  if (savedActive) activeTabId = Number(savedActive);
+}
+
+/* --- Tabs --- */
+function createTab(name='Untitled', content='') {
+  const id = Date.now();
+  const tab = {id, name, content};
+  tabs.push(tab);
+  renderTabs();
+  setActiveTab(id);
+  saveState();
+}
+
+function renderTabs() {
+  tabsContainer.innerHTML='';
+  tabs.forEach(tab=>{
+    const tabEl=document.createElement('div');
+    tabEl.className='tab'+(tab.id===activeTabId?' active':'');
+    tabEl.textContent=tab.name;
+    tabEl.onclick=()=>setActiveTab(tab.id);
+    const closeBtn=document.createElement('span');
+    closeBtn.className='close';
+    closeBtn.textContent='×';
+    closeBtn.onclick=e=>{ e.stopPropagation(); closeTab(tab.id); };
+    tabEl.appendChild(closeBtn);
+    tabsContainer.appendChild(tabEl);
+  });
+  const newBtn=document.createElement('div');
+  newBtn.className='tab';
+  newBtn.textContent='+';
+  newBtn.onclick=()=>{ const name=prompt("Tab name?"); createTab(name||'Untitled'); };
+  tabsContainer.appendChild(newBtn);
+}
+
+function setActiveTab(id) {
+  const tab=tabs.find(t=>t.id===id);
+  if(!tab) return;
+  activeTabId=id;
+  editor.value=tab.content;
+  renderTabs();
+  saveState();
+}
+
+function closeTab(id){
+  const idx=tabs.findIndex(t=>t.id===id);
+  if(idx!==-1) tabs.splice(idx,1);
+  if(activeTabId===id){
+    if(tabs.length) setActiveTab(tabs[0].id);
+    else activeTabId=null, editor.value='';
+  }
+  renderTabs();
+  saveState();
+}
+
+/* --- Save --- */
+function saveTab() {
+  if(!activeTabId && editor.value.trim()!==''){
+    const name = editor.value.trim().substring(0,10) || 'Untitled';
+    createTab(name, editor.value);
+    showSaveFeedback(); return;
+  }
+  if(!activeTabId) return;
+  const tab = tabs.find(t=>t.id===activeTabId);
+  tab.content=editor.value;
+  showSaveFeedback();
+  saveState();
+}
+
+/* --- Visual Save Feedback --- */
+function showSaveFeedback(){
+  const f=document.createElement('div');
+  f.textContent='Saved ✓';
+  Object.assign(f.style,{position:'fixed',bottom:'20px',right:'20px',background:'#007acc',color:'#fff',padding:'8px 12px',borderRadius:'4px',fontFamily:'monospace',boxShadow:'0 2px 6px rgba(0,0,0,0.3)',zIndex:9999});
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(),1200);
+}
+
+/* --- Rename/Close --- */
+function renameCurrentTab(){if(!activeTabId) return; const t=tabs.find(t=>t.id===activeTabId); const n=prompt("New name?",t.name); if(n&&n.trim()!==''){t.name=n.trim(); renderTabs(); saveState();}}
+function closeCurrentTab(){if(!activeTabId) return; closeTab(activeTabId);}
+
+/* --- Search --- */
+function searchTabs(query){if(!query) return; const res=tabs.filter(t=>t.content.includes(query)); if(res.length){setActiveTab(res[0].id); const idx=res[0].content.indexOf(query); editor.focus(); editor.setSelectionRange(idx, idx+query.length);} else alert('No results found');}
+
+/* --- File Picker Overlay --- */
+function openPicker(){
+  pickerOverlay.style.display='block';
+  pickerInput.value='';
+  pickerInput.focus();
+  renderPickerList();
+}
+
+function renderPickerList(filter=''){
+  pickerList.innerHTML='';
+  tabs.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())).forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.textContent=t.name;
+    el.dataset.id=t.id;
+    el.className=i===0?'selected':'';
+    el.onclick=()=>{ setActiveTab(t.id); closePicker(); };
+    pickerList.appendChild(el);
+  });
+}
+
+function getCurrentTimestamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}-${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
+function closePicker(){pickerOverlay.style.display='none';}
+
+/* --- Event Listeners --- */
+document.addEventListener('keydown', e=>{
+  if(e.ctrlKey && e.key.toLowerCase()==='s'){ e.preventDefault(); saveTab(); }
+  if(e.ctrlKey && e.key.toLowerCase()==='k'){ e.preventDefault(); searchBar.style.display='block'; searchInput.focus(); }
+  if(e.altKey && e.key.toLowerCase()==='w'){ e.preventDefault(); closeCurrentTab(); }
+  if(e.altKey && e.key.toLowerCase()==='n'){ e.preventDefault(); const n=prompt("Tab name?"); createTab(getCurrentTimestamp()); }
+  if(e.key==='F2'){ e.preventDefault(); renameCurrentTab(); }
+  if(e.key==='Escape'){ searchBar.style.display='none'; closePicker();   helpOverlay.style.display = 'none';}
+  if(e.ctrlKey && e.key.toLowerCase()==='e' || e.ctrlKey && e.key.toLowerCase()==='p' ){ e.preventDefault(); openPicker(); }
+});
+
+searchInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ searchTabs(searchInput.value); searchBar.style.display='none'; searchInput.value=''; } });
+editor.addEventListener('input', ()=>{
+  if(!activeTabId && editor.value.trim()!==''){ createTab(getCurrentTimestamp()); }
+  else if(activeTabId){ tabs.find(t=>t.id===activeTabId).content=editor.value; saveState(); }
+});
+pickerInput.addEventListener('input', e=>{ renderPickerList(e.target.value); });
+pickerInput.addEventListener('keydown', e=>{
+  const items = Array.from(pickerList.children);
+  let selectedIndex = items.findIndex(i=>i.classList.contains('selected'));
+  if(e.key==='ArrowDown'){ e.preventDefault(); if(selectedIndex<items.length-1){ items[selectedIndex].classList.remove('selected'); selectedIndex++; items[selectedIndex].classList.add('selected'); } }
+  if(e.key==='ArrowUp'){ e.preventDefault(); if(selectedIndex>0){ items[selectedIndex].classList.remove('selected'); selectedIndex--; items[selectedIndex].classList.add('selected'); } }
+  if(e.key==='Enter'){ e.preventDefault(); if(items[selectedIndex]){ setActiveTab(Number(items[selectedIndex].dataset.id)); closePicker(); } }
+});
+
+/* --- Initialize --- */
+loadState();
+if(tabs.length) setActiveTab(activeTabId||tabs[0].id);
+
+</script>
+
+</body>
+</html>
