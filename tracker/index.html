@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Habit Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --bg: #0f1220;
+      --card: #1a1f3c;
+      --accent: #6cf2c2;
+      --accent-2: #7aa2ff;
+      --danger: #ff6b6b;
+      --text: #e6e9ff;
+      --muted: #9aa0c4;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .habit {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 110px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s;
+      user-select: none;
+      border: 2px solid transparent;
+    }
+
+    .habit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    .habit.active {
+      border-color: var(--accent);
+      background: #202866;
+    }
+
+    .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .label {
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .type {
+      font-size: 0.7rem;
+      margin-top: 6px;
+      color: var(--muted);
+    }
+
+    .add {
+      background: transparent;
+      border: 2px dashed var(--muted);
+      color: var(--muted);
+    }
+
+    .add:hover {
+      border-color: var(--accent-2);
+      color: var(--accent-2);
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Habit Tracker</h1>
+
+<div id="grid" class="grid"></div>
+
+<script>
+  const API_BASE = "https://tracker-api.leanderziehm.com";
+
+  /*
+    Habit model:
+    {
+      id: string,
+      label: string,
+      icon: string,
+      mode: "pulse" | "toggle",
+      active: boolean
+    }
+  */
+
+  let habits = [
+    { id: "wash_face", label: "Wash Face", icon: "🧼", mode: "pulse", active: false },
+    { id: "brush_teeth", label: "Brush Teeth", icon: "🦷", mode: "pulse", active: false },
+    { id: "wash_hair", label: "Wash Hair", icon: "🚿", mode: "pulse", active: false },
+    { id: "work_session", label: "Work Session", icon: "💻", mode: "toggle", active: false },
+    { id: "gym", label: "Gym", icon: "🏋️", mode: "toggle", active: false },
+  ];
+
+  const grid = document.getElementById("grid");
+
+  function render() {
+    grid.innerHTML = "";
+
+    habits.forEach(habit => {
+      const el = document.createElement("div");
+      el.className = "habit" + (habit.active ? " active" : "");
+      el.innerHTML = `
+        <div class="icon">${habit.icon}</div>
+        <div class="label">${habit.label}</div>
+        <div class="type">${habit.mode}</div>
+      `;
+      el.onclick = () => handleHabitClick(habit);
+      grid.appendChild(el);
+    });
+
+    const add = document.createElement("div");
+    add.className = "habit add";
+    add.innerHTML = `
+      <div class="icon">➕</div>
+      <div class="label">Add</div>
+    `;
+    add.onclick = addHabit;
+    grid.appendChild(add);
+  }
+
+  async function handleHabitClick(habit) {
+    if (habit.mode === "pulse") {
+      await fetch(`${API_BASE}/habits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: habit.id,
+          description: habit.label,
+          when: "NOW"
+        })
+      });
+      flash(habit);
+    }
+
+    if (habit.mode === "toggle") {
+      habit.active = !habit.active;
+      await fetch(`${API_BASE}/timers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: habit.label,
+          action: habit.active ? "START" : "END" //"STOP"
+        })
+      });
+      render();
+    }
+  }
+
+  function flash(habit) {
+    habit.active = true;
+    render();
+    setTimeout(() => {
+      habit.active = false;
+      render();
+    }, 300);
+  }
+
+  function addHabit() {
+    const label = prompt("Habit name?");
+    if (!label) return;
+
+    const icon = prompt("Emoji icon?", "✅") || "✅";
+    const mode = prompt("Type: pulse or toggle?", "pulse");
+
+    habits.push({
+      id: label.toLowerCase().replace(/\s+/g, "_"),
+      label,
+      icon,
+      mode: mode === "toggle" ? "toggle" : "pulse",
+      active: false
+    });
+
+    render();
+  }
+
+  render();
+</script>
+
+</body>
+</html>
