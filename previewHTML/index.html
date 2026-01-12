@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML Previewer</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: sans-serif;
+    }
+    textarea {
+      flex: 1;
+      width: 100%;
+      box-sizing: border-box;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 1rem;
+      border: 2px solid #444;
+      background: #1e1e1e;
+      color: #dcdcdc;
+    }
+    button {
+      padding: 1rem;
+      border: none;
+      background: #0078d7;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa1;
+    }
+  </style>
+</head>
+<body>
+
+  <textarea id="htmlInput" placeholder="Paste HTML here..."></textarea>
+  <button id="previewBtn">Submit &gt;&gt; Preview</button>
+
+  <script>
+    document.getElementById("previewBtn").addEventListener("click", () => {
+      const userHtml = document.getElementById("htmlInput").value;
+      if (userHtml.trim().length === 0) {
+        alert("Paste some HTML first!");
+        return;
+      }
+      
+      // Replace entire document with the pasted HTML
+      document.open();
+      document.write(userHtml);
+      document.close();
+    });
+  </script>
+
+</body>
+</html>
