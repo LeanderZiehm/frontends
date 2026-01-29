@@ -44,7 +44,7 @@
     .habit {
       background: var(--card);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 0px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -111,7 +111,7 @@
 
     @media (max-width: 900px) {
       .grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
       }
     }
 
@@ -158,13 +158,45 @@
 <script>
   const API_BASE = "https://tracker-api.leanderziehm.com";
 
-  let habits = [
-    { id: "wash_face", label: "Wash Face", icon: "🧼", mode: "pulse", active: false, status: "idle" },
-    { id: "brush_teeth", label: "Brush Teeth", icon: "🦷", mode: "pulse", active: false, status: "idle" },
-    { id: "wash_hair", label: "Wash Hair", icon: "🚿", mode: "pulse", active: false, status: "idle" },
-    { id: "work_session", label: "Work Session", icon: "💻", mode: "toggle", active: false, status: "idle" },
-    { id: "gym", label: "Gym", icon: "🏋️", mode: "toggle", active: false, status: "idle" },
-  ];
+let habits = [
+    // Work & fitness
+
+  // { id: "workout", label: "Workout", icon: "🏋️", mode: "toggle", active: false, status: "idle" },
+  { id: "pushups_10", label: "10 Pushups", icon: "💪", mode: "pulse", active: false, status: "idle" },
+  { id: "walk_outside", label: "20 min Walk Outside", icon: "🚶‍♂️", mode: "pulse", active: false, status: "idle" },
+
+  // Hygiene
+  { id: "wash_face", label: "Wash Face", icon: "🧼", mode: "pulse", active: false, status: "idle" },
+
+  { id: "wash_hair", label: "Wash Hair", icon: "🚿", mode: "pulse", active: false, status: "idle" },
+  { id: "brush_teeth", label: "Brush Teeth", icon: "🪥", mode: "pulse", active: false, status: "idle" },
+  { id: "elmex-gelee", label: "Elmex-Gelee", icon: "😁", mode: "pulse", active: false, status: "idle" },
+
+
+  // Supplements
+  { id: "vitamin_d", label: "Vitamin D", icon: "☀️", mode: "pulse", active: false, status: "idle" },
+  { id: "omega_3", label: "Omega 3", icon: "🐟", mode: "pulse", active: false, status: "idle" },
+
+  // Protein & meals
+  { id: "eat_chicken", label: "Eat Chicken", icon: "🍗", mode: "pulse", active: false, status: "idle" },
+  { id: "eat_eggs", label: "Eat Eggs", icon: "🥚", mode: "pulse", active: false, status: "idle" },
+  { id: "eat_fish", label: "Eat Fish", icon: "🐠", mode: "pulse", active: false, status: "idle" },
+
+  // Veggies & gut health
+  { id: "eat_broccoli", label: "Eat Broccoli", icon: "🥦", mode: "pulse", active: false, status: "idle" },
+ 
+  { id: "eat_sauerkraut", label: "Eat Sauerkraut", icon: "🫙", mode: "pulse", active: false, status: "idle" },
+ 
+  { id: "eat_flax_seeds", label: "Eat Flax Seeds", icon: "🌾", mode: "pulse", active: false, status: "idle" },
+  // Sleep
+  { id: "sleep_7_9", label: "7–9 Hours Sleep", icon: "😴", mode: "pulse", active: false, status: "idle" },
+
+  // Meta
+  { id: "healthy_day", label: "Healthy Day", icon: "✅", mode: "pulse", active: false, status: "idle" },
+
+
+];
+
 
   const grid = document.getElementById("grid");
 

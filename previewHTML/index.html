@@ -44,18 +44,52 @@
   <button id="previewBtn">Submit &gt;&gt; Preview</button>
 
   <script>
-    document.getElementById("previewBtn").addEventListener("click", () => {
-      const userHtml = document.getElementById("htmlInput").value;
-      if (userHtml.trim().length === 0) {
-        alert("Paste some HTML first!");
-        return;
-      }
-      
-      // Replace entire document with the pasted HTML
-      document.open();
-      document.write(userHtml);
-      document.close();
-    });
+
+    document.getElementById("htmlInput").addEventListener("input",clickButton);
+    document.getElementById("previewBtn").addEventListener("click",clickButton);
+
+ function clickButton() {
+  const userHtml = document.getElementById("htmlInput").value.trim();
+
+  if (userHtml.length === 0) {
+    alert("Paste some HTML first!");
+    return;
+  }
+
+  // 1. Must contain at least one HTML tag
+  if (!/<[^>]+>/.test(userHtml)) {
+    alert("That doesn't look like HTML (no tags found).");
+    return;
+  }
+
+  // 2. Basic tag structure check (opening + closing)
+  if (!/<\/?[a-z][\s\S]*>/i.test(userHtml)) {
+    alert("Invalid HTML tag structure.");
+    return;
+  }
+
+  // 3. Optional: warn if no <html> or <body> tag
+  if (!/<(html|body)[\s>]/i.test(userHtml)) {
+    const proceed = confirm(
+      "No <html> or <body> tag found. Preview anyway?"
+    );
+    if (!proceed) return;
+  }
+
+  // 4. Prevent script execution (optional but smart)
+  if (/<script[\s>]/i.test(userHtml)) {
+    const proceed = confirm(
+      "This HTML contains <script> tags. Continue?"
+    );
+    if (!proceed) return;
+  }
+
+  // Replace entire document with the pasted HTML
+  document.open();
+  document.write(userHtml);
+  document.close();
+}
+
   </script>
 
 </body>
