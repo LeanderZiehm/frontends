@@ -306,6 +306,8 @@ let habits = [
         habit.status = "error";
         render();
       }
+    }else{
+      await refetchState();
     }
   }
 
