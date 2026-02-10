@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Life Timeline MVP</title>
+
+  <!-- SVG.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.2/dist/svg.min.js"></script>
+
+  <!-- d3 (scale + time helpers) -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #0f1115;
+      color: #eaeaea;
+    }
+
+    header {
+      padding: 12px 16px;
+      background: #161922;
+      border-bottom: 1px solid #222;
+    }
+
+    #app {
+      padding: 16px;
+    }
+
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .year {
+      padding: 10px;
+      background: #1c2030;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+      user-select: none;
+    }
+
+    .year.selected {
+      background: #4c6ef5;
+    }
+
+    #timeline {
+      border-top: 1px solid #222;
+      padding-top: 12px;
+    }
+
+    #controls {
+      margin-bottom: 10px;
+    }
+
+    input, button {
+      background: #1c2030;
+      border: 1px solid #333;
+      color: #eaeaea;
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    svg {
+      background: #0b0d12;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Life Timeline — MVP</strong>
+  </header>
+
+  <div id="app">
+    <div id="yearGrid" class="year-grid"></div>
+
+    <div id="timeline">
+      <div id="controls">
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+        <input type="text" id="label" placeholder="Event description" />
+        <button id="addEvent">Add event</button>
+      </div>
+      <div id="svgContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------- storage helpers -------------------- */
+
+    const LS_KEY = "lifeTimelineData";
+
+    function loadData() {
+      return JSON.parse(localStorage.getItem(LS_KEY)) || {
+        birthdate: null,
+        events: []
+      };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+    }
+
+    let data = loadData();
+
+    /* -------------------- birthdate flow -------------------- */
+
+    if (!data.birthdate) {
+      const bd = prompt("Enter your birthdate (YYYY-MM-DD):");
+      if (bd) {
+        data.birthdate = bd;
+        saveData(data);
+      }
+    }
+
+    const birthYear = new Date(data.birthdate).getFullYear();
+    const currentYear = new Date().getFullYear();
+
+    /* -------------------- year grid -------------------- */
+
+    const yearGrid = document.getElementById("yearGrid");
+    let yearSelection = [];
+
+    function renderYearGrid() {
+      yearGrid.innerHTML = "";
+      for (let y = birthYear; y <= currentYear; y++) {
+        const div = document.createElement("div");
+        div.className = "year";
+        div.textContent = y;
+
+        if (yearSelection.includes(y)) {
+          div.classList.add("selected");
+        }
+
+        div.onclick = () => handleYearClick(y);
+        yearGrid.appendChild(div);
+      }
+    }
+
+    function handleYearClick(year) {
+      if (yearSelection.length === 0) {
+        yearSelection = [year];
+      } else if (yearSelection.length === 1) {
+        yearSelection = [yearSelection[0], year];
+      } else {
+        yearSelection = [year];
+      }
+
+      renderYearGrid();
+      renderTimeline();
+    }
+
+    renderYearGrid();
+
+    /* -------------------- timeline rendering -------------------- */
+
+    const width = 1000;
+    const rowHeight = 24;
+    const padding = 40;
+
+    let draw = SVG().addTo("#svgContainer").size(width, 300);
+
+    function renderTimeline() {
+      draw.clear();
+
+      if (yearSelection.length === 0) return;
+
+      let startYear = Math.min(...yearSelection);
+      let endYear = Math.max(...yearSelection);
+
+      const start = new Date(startYear + "-01-01");
+      const end = new Date(endYear + "-12-31");
+
+      const scale = d3.scaleTime()
+        .domain([start, end])
+        .range([padding, width - padding]);
+
+      // axis
+      const axisGroup = draw.group();
+      for (let y = startYear; y <= endYear; y++) {
+        const x = scale(new Date(y + "-01-01"));
+        axisGroup.line(x, 0, x, 300).stroke({ width: 1, color: "#222" });
+        axisGroup.text(String(y))
+          .move(x + 4, 4)
+          .font({ size: 10, fill: "#666" });
+      }
+
+      // filter events in range
+      const events = data.events.filter(ev => {
+        const s = new Date(ev.start);
+        const e = ev.end ? new Date(ev.end) : s;
+        return e >= start && s <= end;
+      });
+
+      // stacking logic
+      const rows = [];
+
+      events.forEach(ev => {
+        const s = new Date(ev.start);
+        const e = ev.end ? new Date(ev.end) : s;
+
+        let placed = false;
+
+        for (let r = 0; r < rows.length; r++) {
+          if (rows[r].every(other => {
+            const os = new Date(other.start);
+            const oe = other.end ? new Date(other.end) : os;
+            return e < os || s > oe;
+          })) {
+            rows[r].push(ev);
+            ev._row = r;
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          ev._row = rows.length;
+          rows.push([ev]);
+        }
+      });
+
+      // draw events
+      events.forEach(ev => {
+        const s = new Date(ev.start);
+        const e = ev.end ? new Date(ev.end) : s;
+
+        const x = scale(s);
+        const w = Math.max(4, scale(e) - scale(s));
+        const y = ev._row * rowHeight + 40;
+
+        draw.rect(w, 18)
+          .move(x, y)
+          .radius(4)
+          .fill(ev.color);
+
+        draw.text(ev.label)
+          .move(x + 4, y + 2)
+          .font({ size: 10, fill: "#fff" });
+      });
+
+      draw.height(rows.length * rowHeight + 80);
+    }
+
+    /* -------------------- add event -------------------- */
+
+    document.getElementById("addEvent").onclick = () => {
+      const start = document.getElementById("startDate").value;
+      const end = document.getElementById("endDate").value;
+      const label = document.getElementById("label").value;
+
+      if (!start || !label) return;
+
+      data.events.push({
+        start,
+        end: end || null,
+        label,
+        color: `hsl(${Math.random() * 360},70%,60%)`
+      });
+
+      saveData(data);
+      renderTimeline();
+    };
+  </script>
+</body>
+</html>
