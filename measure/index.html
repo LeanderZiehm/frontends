@@ -145,7 +145,7 @@ function displayEntries(entries) {
   }
   entries.forEach(entry => {
     const li = document.createElement('li');
-    li.textContent = `${entry.text}: ${entry.value}`;
+    li.textContent = `${entry.text}: ${entry.value.toFixed(2)}`; // 19.2 should be 19.20
     entriesList.appendChild(li);
   });
 }
