@@ -31,6 +31,7 @@ def build_index_html() -> str:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Frontend Index</title>
+         <img src="https://pix.leanderziehm.com/frontends-main-py">
         <style>
             /* Reset some basic styles */
             * {
