@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdowns</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f6;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --accent: #534AB7;
+    --accent-bg: #EEEDFE;
+    --accent-text: #3C3489;
+    --danger: #A32D2D;
+    --danger-bg: #FCEBEB;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413;
+      --surface: #1e1e1c;
+      --border: rgba(255,255,255,0.1);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0efe8;
+      --text-muted: #8a8a84;
+      --accent: #7F77DD;
+      --accent-bg: #26215C;
+      --accent-text: #AFA9EC;
+      --danger: #F09595;
+      --danger-bg: #501313;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    max-width: 680px;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  select {
+    appearance: none;
+    background: var(--surface);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 7px 32px 7px 12px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:hover { border-color: var(--accent); }
+
+  .add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { opacity: 0.85; }
+  .add-btn:active { transform: scale(0.94); }
+
+  .grid {
+    max-width: 680px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border-strong); }
+
+  .card-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    padding-right: 28px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    opacity: 0.7;
+  }
+
+  .card-value {
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    color: var(--accent);
+  }
+
+  .card-unit {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .card-past .card-value { color: var(--danger); }
+
+  .delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .delete-btn:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .empty {
+    max-width: 680px;
+    margin: 4rem auto;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+  .empty p { margin-top: 8px; font-size: 13px; opacity: 0.7; }
+
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    border: 0.5px solid var(--border-strong);
+    position: relative;
+  }
+
+  .modal h2 {
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .modal-close:hover { background: var(--bg); }
+
+  .field { margin-bottom: 1rem; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  input[type="text"], input[type="date"] {
+    width: 100%;
+    background: var(--bg);
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+
+  .modal-footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-cancel:hover { background: var(--bg); }
+
+  .btn-confirm {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 20px;
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.15s;
+  }
+  .btn-confirm:hover { opacity: 0.85; }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 5px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Countdowns</h1>
+  <div class="header-right">
+    <select id="unit-select">
+      <option value="auto">Smart (weeks/days)</option>
+      <option value="days">Days</option>
+      <option value="minutes">Minutes</option>
+      <option value="seconds">Seconds</option>
+    </select>
+    <button class="add-btn" id="open-modal" title="Add countdown">+</button>
+  </div>
+</header>
+
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">
+  No countdowns yet
+  <p>Hit + to add your first one</p>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>New countdown</h2>
+    <button class="modal-close" id="close-modal">&#x2715;</button>
+    <div class="field">
+      <label for="inp-name">Label</label>
+      <input type="text" id="inp-name" placeholder="e.g. Summer holiday" maxlength="60" />
+      <div class="error-msg" id="err-name">Please enter a label</div>
+    </div>
+    <div class="field">
+      <label for="inp-date">Date</label>
+      <input type="date" id="inp-date" />
+      <div class="error-msg" id="err-date">Please pick a date</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="btn-cancel">Cancel</button>
+      <button class="btn-confirm" id="btn-confirm">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'countdowns_v1';
+  let items = [];
+  let unit = 'auto';
+  let ticker;
+
+  function load() {
+    try { items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { items = []; }
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function formatValue(target, u) {
+    const now = Date.now();
+    const diff = target - now;
+    const past = diff < 0;
+    const abs = Math.abs(diff);
+    let val, unitStr;
+
+    if (u === 'auto') {
+      const days = abs / 86400000;
+      if (!past && days < 21) {
+        const weeks = abs / 604800000;
+        val = weeks.toFixed(1);
+        unitStr = 'weeks';
+      } else {
+        val = Math.floor(abs / 86400000).toLocaleString();
+        unitStr = 'days';
+      }
+    } else if (u === 'days') {
+      val = Math.floor(abs / 86400000).toLocaleString();
+      unitStr = 'days';
+    } else if (u === 'minutes') {
+      val = Math.floor(abs / 60000).toLocaleString();
+      unitStr = 'minutes';
+    } else {
+      val = Math.floor(abs / 1000).toLocaleString();
+      unitStr = 'seconds';
+    }
+
+    return { val, unitStr, past };
+  }
+
+  function renderAll() {
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
+    if (!items.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    grid.innerHTML = items.map((item, i) => {
+      const { val, unitStr, past } = formatValue(item.ts, unit);
+      const dateStr = new Date(item.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      return `<div class="card${past ? ' card-past' : ''}" data-i="${i}">
+        <div class="card-label">${esc(item.name)}</div>
+        <div class="card-value" id="val-${i}">${val}</div>
+        <div class="card-unit" id="unit-${i}">${past ? 'past' : 'to go'} &middot; ${unitStr}</div>
+        <div class="card-date">${dateStr}</div>
+        <button class="delete-btn" onclick="remove(${i})" title="Remove">&#x2715;</button>
+      </div>`;
+    }).join('');
+  }
+
+  function tickUpdate() {
+    items.forEach((item, i) => {
+      const vEl = document.getElementById('val-' + i);
+      const uEl = document.getElementById('unit-' + i);
+      if (!vEl) return;
+      const { val, unitStr, past } = formatValue(item.ts, unit);
+      vEl.textContent = val;
+      uEl.textContent = (past ? 'past' : 'to go') + ' \u00B7 ' + unitStr;
+      const card = vEl.closest('.card');
+      if (past) card.classList.add('card-past'); else card.classList.remove('card-past');
+    });
+  }
+
+  function startTicker() {
+    clearInterval(ticker);
+    const interval = (unit === 'seconds' || unit === 'auto') ? 1000 : (unit === 'minutes' ? 10000 : 60000);
+    ticker = setInterval(tickUpdate, interval);
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function remove(i) {
+    items.splice(i, 1);
+    save();
+    renderAll();
+    startTicker();
+  }
+
+  document.getElementById('unit-select').addEventListener('change', e => {
+    unit = e.target.value;
+    renderAll();
+    startTicker();
+  });
+
+  const overlay = document.getElementById('overlay');
+  const openBtn = document.getElementById('open-modal');
+  const closeBtn = document.getElementById('close-modal');
+  const cancelBtn = document.getElementById('btn-cancel');
+  const confirmBtn = document.getElementById('btn-confirm');
+  const inpName = document.getElementById('inp-name');
+  const inpDate = document.getElementById('inp-date');
+  const errName = document.getElementById('err-name');
+  const errDate = document.getElementById('err-date');
+
+  function openModal() {
+    inpName.value = '';
+    inpDate.value = '';
+    errName.style.display = 'none';
+    errDate.style.display = 'none';
+    overlay.classList.add('open');
+    setTimeout(() => inpName.focus(), 50);
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+  }
+
+  openBtn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && overlay.classList.contains('open')) confirmBtn.click();
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    let ok = true;
+    if (!inpName.value.trim()) { errName.style.display = 'block'; ok = false; } else errName.style.display = 'none';
+    if (!inpDate.value) { errDate.style.display = 'block'; ok = false; } else errDate.style.display = 'none';
+    if (!ok) return;
+
+    const ts = new Date(inpDate.value).setHours(0, 0, 0, 0);
+    items.push({ name: inpName.value.trim(), ts });
+    save();
+    closeModal();
+    renderAll();
+    startTicker();
+  });
+
+  load();
+  renderAll();
+  startTicker();
+</script>
+</body>
+</html>
