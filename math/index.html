@@ -116,30 +116,33 @@ function generate() {
 
     let a, b, question, answer;
 
+    const maxPlusMinus = 10000;
+    const maxMultiplyDivide = 100;
+
     if (op === "+") {
-        a = rand(0, 10000);
-        b = rand(0, 10000);
+        a = rand(0, maxPlusMinus);
+        b = rand(0, maxPlusMinus);
         answer = a + b;
         question = `${a} + ${b}`;
     }
 
     if (op === "-") {
-        a = rand(0, 10000);
+        a = rand(0, maxPlusMinus);
         b = rand(0, a);
         answer = a - b;
         question = `${a} - ${b}`;
     }
 
     if (op === "*") {
-        a = rand(1, 100);
-        b = rand(1, 100);
+        a = rand(1, maxMultiplyDivide);
+        b = rand(1, maxMultiplyDivide);
         answer = a * b;
         question = `${a} × ${b}`;
     }
 
     if (op === "/") {
-        b = rand(1, 100);
-        answer = rand(1, 100);
+        b = rand(1, maxMultiplyDivide);
+        answer = rand(1, maxMultiplyDivide);
         a = b * answer;
         question = `${a} ÷ ${b}`;
     }
