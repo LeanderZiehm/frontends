@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Math Trainer</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .container {
+        background: #111827;
+        padding: 25px;
+        border-radius: 12px;
+        width: 360px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        position: relative;
+    }
+
+    .stats {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+        color: #93c5fd;
+        text-align: right;
+    }
+
+    .question {
+        font-size: 26px;
+        margin: 40px 0 20px;
+        text-align: center;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: none;
+        margin-bottom: 10px;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #3b82f6;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        margin-top: 5px;
+    }
+
+    button:hover {
+        background: #2563eb;
+    }
+
+    .result {
+        text-align: center;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+
+    .correct { color: #22c55e; }
+    .wrong { color: #ef4444; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="stats" id="stats"></div>
+
+    <div class="question" id="question">Loading...</div>
+
+    <input type="number" id="answer" placeholder="Your answer" />
+
+    <button onclick="checkAnswer()">Submit</button>
+    <button onclick="nextQuestion()">Next Question</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+let current = {};
+let streak = 0;
+let total = 0;
+let history = JSON.parse(localStorage.getItem("mathHistory") || "[]");
+
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function save() {
+    localStorage.setItem("mathHistory", JSON.stringify(history));
+    localStorage.setItem("streak", streak);
+    localStorage.setItem("total", total);
+}
+
+function load() {
+    streak = parseInt(localStorage.getItem("streak") || "0");
+    total = parseInt(localStorage.getItem("total") || "0");
+}
+
+function generate() {
+    const ops = ["+", "-", "*", "/"];
+    const op = ops[rand(0, 3)];
+
+    let a, b, question, answer;
+
+    if (op === "+") {
+        a = rand(0, 10000);
+        b = rand(0, 10000);
+        answer = a + b;
+        question = `${a} + ${b}`;
+    }
+
+    if (op === "-") {
+        a = rand(0, 10000);
+        b = rand(0, a);
+        answer = a - b;
+        question = `${a} - ${b}`;
+    }
+
+    if (op === "*") {
+        a = rand(1, 100);
+        b = rand(1, 100);
+        answer = a * b;
+        question = `${a} × ${b}`;
+    }
+
+    if (op === "/") {
+        b = rand(1, 100);
+        answer = rand(1, 100);
+        a = b * answer;
+        question = `${a} ÷ ${b}`;
+    }
+
+    current = { question, answer };
+    document.getElementById("question").textContent = question;
+    document.getElementById("answer").value = "";
+    document.getElementById("result").textContent = "";
+}
+
+function updateStats() {
+    document.getElementById("stats").innerHTML =
+        `Streak: ${streak}<br>Total: ${total}`;
+}
+
+function checkAnswer() {
+    const user = parseFloat(document.getElementById("answer").value);
+    const correct = user === current.answer;
+
+    total++;
+
+    let record = {
+        question: current.question,
+        correctAnswer: current.answer,
+        userAnswer: user,
+        correct,
+        time: new Date().toISOString()
+    };
+
+    history.push(record);
+
+    if (correct) {
+        streak++;
+        document.getElementById("result").textContent = "Correct!";
+        document.getElementById("result").className = "result correct";
+    } else {
+        streak = 0;
+        document.getElementById("result").textContent =
+            `Wrong! Correct: ${current.answer}`;
+        document.getElementById("result").className = "result wrong";
+    }
+
+    save();
+    updateStats();
+}
+
+function nextQuestion() {
+    generate();
+}
+
+load();
+updateStats();
+generate();
+</script>
+
+</body>
+</html>
+
+
+<router-outlet />
