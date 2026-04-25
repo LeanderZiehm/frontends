@@ -151,7 +151,7 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
     formData.append("file", selectedFile);
 
     try {
-        const res = await fetch(`https://apis-gules-three.vercel.app/extract-clustered?k=${k}`, {
+        const res = await fetch(`https://extract-colors-api.leanderziehm.com/extract-clustered?k=${k}`, {
             method: "POST",
             body: formData
         });
