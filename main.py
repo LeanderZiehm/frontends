@@ -7,7 +7,7 @@ app = FastAPI()
 
 BASE_DIR = Path(__file__).parent
 
-ALLOWED_EXTENSIONS = {".html", ".css", ".js"}
+ALLOWED_EXTENSIONS = {".html", ".css", ".js",".png"}
 
 
 # -----------------------------
