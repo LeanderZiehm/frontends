@@ -13,7 +13,7 @@ ALLOWED_EXTENSIONS = {".html", ".css", ".js"}
 # -----------------------------
 # FILE SERVER (FIXED FOR VERCEL)
 # -----------------------------
-@app.get("/{path:path}")
+@app.get("/p/{path:path}")
 async def serve_static(path: str):
     full_path = BASE_DIR / path
 
@@ -117,7 +117,7 @@ def build_index_html() -> str:
         if folder in seen:
             continue
 
-        url = "/" + urllib.parse.quote(str(folder))
+        url = "/p/" + urllib.parse.quote(str(folder))
         html += f'<a href="{url}/">{folder}</a>\n'
         seen.add(folder)
 
