@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Image Color Clustering</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    h2 {
+        margin-top: 0;
+    }
+
+    .row {
+        margin-bottom: 15px;
+    }
+
+    input[type="number"] {
+        width: 80px;
+        padding: 5px;
+    }
+
+    button {
+        padding: 10px 15px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+
+    #preview {
+        max-width: 200px;
+        margin-top: 10px;
+        display: none;
+        border: 1px solid #ccc;
+    }
+
+    #colors {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .color-box {
+        height: 80px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        padding: 5px;
+        font-size: 12px;
+        color: #000;
+        border: 1px solid #ddd;
+        user-select: none;
+    }
+
+    .hint {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #333;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Image Color Extractor</h2>
+
+    <div class="row">
+        <input type="file" id="fileInput" accept="image/*" />
+        <div class="hint">Or paste image (Ctrl+V)</div>
+        <img id="preview" />
+    </div>
+
+    <div class="row">
+        <label>k:</label>
+        <input type="number" id="k" value="20" min="1" max="50" />
+    </div>
+
+    <div class="row">
+        <button id="uploadBtn">Analyze Image</button>
+        <span class="status" id="status"></span>
+    </div>
+
+    <div id="colors"></div>
+</div>
+
+<script>
+let selectedFile = null;
+
+// File input
+document.getElementById("fileInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) setImage(file);
+});
+
+// Paste image support
+document.addEventListener("paste", (e) => {
+    const items = e.clipboardData.items;
+    for (let item of items) {
+        if (item.type.indexOf("image") !== -1) {
+            const file = item.getAsFile();
+            setImage(file);
+        }
+    }
+});
+
+function setImage(file) {
+    selectedFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById("preview");
+        img.src = e.target.result;
+        img.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+}
+
+// Upload + API call
+document.getElementById("uploadBtn").addEventListener("click", async () => {
+    if (!selectedFile) {
+        alert("Please select or paste an image first.");
+        return;
+    }
+
+    const k = document.getElementById("k").value || 20;
+    const status = document.getElementById("status");
+    const colorsDiv = document.getElementById("colors");
+
+    status.textContent = "Processing...";
+    colorsDiv.innerHTML = "";
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+        const res = await fetch(`https://apis-gules-three.vercel.app/extract-clustered?k=${k}`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        status.textContent = "Done";
+
+        data.clusters.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "color-box";
+            div.style.background = c.hex;
+            div.textContent = c.hex;
+
+            div.addEventListener("click", () => {
+                navigator.clipboard.writeText(c.hex);
+                div.textContent = "Copied " + c.hex;
+                setTimeout(() => div.textContent = c.hex, 800);
+            });
+
+            colorsDiv.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error(err);
+        status.textContent = "Error processing image";
+    }
+});
+</script>
+
+</body>
+</html>
