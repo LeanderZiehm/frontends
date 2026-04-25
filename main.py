@@ -1,29 +1,47 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, FileResponse
 from pathlib import Path
 import urllib.parse
 
 app = FastAPI()
 
 BASE_DIR = Path(__file__).parent
-ALLOWED_EXTENSIONS = {".html", ".css", ".js"}  # allow CSS/JS for static serving
 
-class FilteredStaticFiles(StaticFiles):
-    async def get_response(self, path: str, scope):
-        # Ensure self.directory is a Path object
-        base_dir = Path(self.directory) if self.directory is not None else Path(".")
-        full_path = (base_dir / path).resolve()
-        
-        if not full_path.exists() or full_path.suffix not in ALLOWED_EXTENSIONS:
-            raise HTTPException(status_code=404, detail="File not found")
-        return await super().get_response(path, scope)
+ALLOWED_EXTENSIONS = {".html", ".css", ".js"}
 
-app.mount("/static", FilteredStaticFiles(directory=BASE_DIR), name="static")
 
+# -----------------------------
+# FILE SERVER (FIXED FOR VERCEL)
+# -----------------------------
+@app.get("/static/{path:path}")
+async def serve_static(path: str):
+    full_path = BASE_DIR / path
+
+    # Case 1: folder route → /extract-colors → /extract-colors/index.html
+    if full_path.is_dir():
+        full_path = full_path / "index.html"
+
+    # Case 2: no extension → assume html page
+    elif full_path.suffix == "":
+        full_path = full_path.with_suffix(".html")
+
+    full_path = full_path.resolve()
+
+    # Security + existence check
+    if (
+        not full_path.exists()
+        or full_path.suffix not in ALLOWED_EXTENSIONS
+        or BASE_DIR not in full_path.parents
+    ):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(full_path)
+
+
+# -----------------------------
+# INDEX PAGE GENERATOR
+# -----------------------------
 def build_index_html() -> str:
-    """Generate a modern-looking HTML index showing .html files."""
-
     html = """
     <!DOCTYPE html>
     <html lang="en">
@@ -31,14 +49,13 @@ def build_index_html() -> str:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Frontend Index</title>
-         <img src="https://pix.leanderziehm.com/frontends-main-py">
+
         <style>
-            /* Reset some basic styles */
             * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: Arial, sans-serif;
             }
 
             body {
@@ -52,48 +69,31 @@ def build_index_html() -> str:
 
             .container {
                 background: white;
-                border-radius: 12px;
                 padding: 40px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border-radius: 12px;
                 width: 100%;
                 max-width: 700px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             }
 
             h1 {
                 text-align: center;
-                margin-bottom: 30px;
-                color: #333;
-                font-size: 2.5rem;
-            }
-
-            ul {
-                list-style: none;
-            }
-
-            li {
-                margin: 12px 0;
+                margin-bottom: 25px;
             }
 
             a {
-                text-decoration: none;
-                padding: 12px 20px;
                 display: block;
-                border-radius: 8px;
+                padding: 12px;
+                margin: 8px 0;
                 background: #4f46e5;
                 color: white;
-                font-weight: 600;
-                transition: all 0.3s ease;
+                text-decoration: none;
+                border-radius: 8px;
+                transition: 0.2s;
             }
 
             a:hover {
                 background: #6366f1;
-                transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            }
-
-            .subpath {
-                font-size: 0.9rem;
-                color: #555;
             }
         </style>
     </head>
@@ -103,20 +103,23 @@ def build_index_html() -> str:
             <ul>
     """
 
-    seen_folders = set()
-    for file_path in BASE_DIR.rglob("*.html"):
-        rel_path = file_path.relative_to(BASE_DIR)
+    seen = set()
 
-        if rel_path.name == "index.html":
-            folder = rel_path.parent
-            display_name = "Home" if folder == Path('.') else folder.name
-            if folder not in seen_folders:
-                url_path = "/static/" + urllib.parse.quote(str(rel_path))
-                html += f'<li><a href="{url_path}">{display_name}</a></li>'
-                seen_folders.add(folder)
-        else:
-            url_path = "/static/" + urllib.parse.quote(str(rel_path))
-            html += f'<li><a href="{url_path}">{rel_path}</a></li>'
+    # find all index.html files
+    for file_path in BASE_DIR.rglob("index.html"):
+        rel = file_path.relative_to(BASE_DIR)
+        folder = rel.parent
+
+        # skip root index
+        if folder == Path("."):
+            continue
+
+        if folder in seen:
+            continue
+
+        url = "/static/" + urllib.parse.quote(str(folder))
+        html += f'<a href="{url}/">{folder}</a>\n'
+        seen.add(folder)
 
     html += """
             </ul>
@@ -127,10 +130,18 @@ def build_index_html() -> str:
 
     return html
 
+
+# -----------------------------
+# ROOT
+# -----------------------------
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return build_index_html()
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8100)
+
+# -----------------------------
+# OPTIONAL: health check
+# -----------------------------
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
