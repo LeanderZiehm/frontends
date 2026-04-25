@@ -307,7 +307,6 @@
   <h1>Countdowns</h1>
   <div class="header-right">
     <select id="unit-select">
-      <option value="auto">Smart (weeks/days)</option>
       <option value="days">Days</option>
       <option value="minutes">Minutes</option>
       <option value="seconds">Seconds</option>
@@ -346,7 +345,7 @@
 <script>
   const STORAGE_KEY = 'countdowns_v1';
   let items = [];
-  let unit = 'auto';
+  let unit = 'days';
   let ticker;
 
   function load() {
@@ -364,17 +363,7 @@
     const abs = Math.abs(diff);
     let val, unitStr;
 
-    if (u === 'auto') {
-      const days = abs / 86400000;
-      if (!past && days < 21) {
-        const weeks = abs / 604800000;
-        val = weeks.toFixed(1);
-        unitStr = 'weeks';
-      } else {
-        val = Math.floor(abs / 86400000).toLocaleString();
-        unitStr = 'days';
-      }
-    } else if (u === 'days') {
+    if (u === 'days') {
       val = Math.floor(abs / 86400000).toLocaleString();
       unitStr = 'days';
     } else if (u === 'minutes') {
@@ -421,7 +410,7 @@
 
   function startTicker() {
     clearInterval(ticker);
-    const interval = (unit === 'seconds' || unit === 'auto') ? 1000 : (unit === 'minutes' ? 10000 : 60000);
+    const interval = (unit === 'seconds') ? 1000 : (unit === 'minutes' ? 10000 : 60000);
     ticker = setInterval(tickUpdate, interval);
   }
 
