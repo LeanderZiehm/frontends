@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>Image Color Clustering</title>
+
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -60,7 +61,6 @@
         justify-content: center;
         padding: 5px;
         font-size: 12px;
-        color: #000;
         border: 1px solid #ddd;
         user-select: none;
     }
@@ -77,6 +77,7 @@
     }
 </style>
 </head>
+
 <body>
 
 <div class="container">
@@ -95,6 +96,8 @@
 
     <div class="row">
         <button id="uploadBtn">Analyze Image</button>
+        <button id="copyHexBtn">Copy All HEX</button>
+        <button id="copyCssBtn">Copy as CSS</button>
         <span class="status" id="status"></span>
     </div>
 
@@ -103,14 +106,15 @@
 
 <script>
 let selectedFile = null;
+let extractedColors = [];
 
-// File input
+/* ---------------- File input ---------------- */
 document.getElementById("fileInput").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (file) setImage(file);
 });
 
-// Paste image support
+/* ---------------- Paste support ---------------- */
 document.addEventListener("paste", (e) => {
     const items = e.clipboardData.items;
     for (let item of items) {
@@ -133,7 +137,7 @@ function setImage(file) {
     reader.readAsDataURL(file);
 }
 
-// Upload + API call
+/* ---------------- Analyze image ---------------- */
 document.getElementById("uploadBtn").addEventListener("click", async () => {
     if (!selectedFile) {
         alert("Please select or paste an image first.");
@@ -146,21 +150,27 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
 
     status.textContent = "Processing...";
     colorsDiv.innerHTML = "";
+    extractedColors = [];
 
     const formData = new FormData();
     formData.append("file", selectedFile);
 
     try {
-        const res = await fetch(`https://extract-colors-api.leanderziehm.com/extract-clustered?k=${k}`, {
-            method: "POST",
-            body: formData
-        });
+        const res = await fetch(
+            `https://extract-colors-api.leanderziehm.com/extract-clustered?k=${k}`,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
         const data = await res.json();
 
         status.textContent = "Done";
 
         data.clusters.forEach(c => {
+            extractedColors.push(c.hex);
+
             const div = document.createElement("div");
             div.className = "color-box";
             div.style.background = c.hex;
@@ -179,6 +189,28 @@ document.getElementById("uploadBtn").addEventListener("click", async () => {
         console.error(err);
         status.textContent = "Error processing image";
     }
+});
+
+/* ---------------- Copy HEX ---------------- */
+document.getElementById("copyHexBtn").addEventListener("click", () => {
+    if (!extractedColors.length) return;
+
+    navigator.clipboard.writeText(extractedColors.join(", "));
+    document.getElementById("status").textContent = "Copied HEX list";
+});
+
+/* ---------------- Copy CSS ---------------- */
+document.getElementById("copyCssBtn").addEventListener("click", () => {
+    if (!extractedColors.length) return;
+
+    const css = `:root {\n` +
+        extractedColors
+            .map((c, i) => `  --color-${i + 1}: ${c};`)
+            .join("\n") +
+        `\n}`;
+
+    navigator.clipboard.writeText(css);
+    document.getElementById("status").textContent = "Copied CSS variables";
 });
 </script>
 
