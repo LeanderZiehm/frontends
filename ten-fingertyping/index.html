@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Typing Trainer</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f1115;
+    color: #e6e6e6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #handOverlay {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    text-align: center;
+    z-index: 10;
+  }
+
+  #handContainer {
+    position: relative;
+    width: 420px;
+  }
+
+  #handsBase {
+    width: 420px;
+    border-radius: 10px;
+  }
+
+  #fingerCutout {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 420px;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+  }
+
+  #fingerLabel {
+    margin-top: 6px;
+    font-size: 14px;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  #app {
+    margin-top: 260px;
+    width: 80%;
+    max-width: 900px;
+    text-align: center;
+  }
+
+  textarea {
+    width: 100%;
+    height: 120px;
+    background: #1a1d24;
+    color: white;
+    border: 1px solid #333;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  button {
+    margin-top: 10px;
+    padding: 10px 18px;
+    border: none;
+    background: #3a82f6;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  #textDisplay {
+    margin-top: 20px;
+    font-size: 20px;
+    text-align: left;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
+
+  .done { color: #666; }
+  .current {
+    background: #3a82f6;
+    border-radius: 4px;
+    padding: 2px 4px;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="handOverlay">
+  <div id="handContainer">
+    <img id="handsBase" src="./images/hands.png"/>
+    <img id="fingerCutout" src=""/>
+  </div>
+  <div id="fingerLabel">Paste text to begin</div>
+</div>
+
+<div id="app">
+  <h2>Typing Trainer</h2>
+
+  <textarea id="inputText"></textarea>
+  <button onclick="start()">Start</button>
+
+  <div id="textDisplay"></div>
+</div>
+
+<script>
+let text = "";
+let index = 0;
+let spans = [];
+
+const fingerMap = {
+  left_pinky: { hex:"#e93545", image:"./images/left-pinky.png", keys:["q","a","1"] },
+  left_ring_finger: { hex:"#f1a524", image:"./images/left-ring.png", keys:["w","s","2"] },
+  left_middle_finger: { hex:"#72bf7c", image:"./images/left-middle.png", keys:["e","d","3"] },
+  left_index_finger: { hex:"#07aee8", image:"./images/left-index.png", keys:["r","t","f","g","4","5"] },
+  right_index_finger: { hex:"#197295", image:"./images/right-index.png", keys:["y","u","h","j","6","7"] },
+  right_middle_finger: { hex:"#98d6f3", image:"./images/right-middle.png", keys:["i","k","8"] },
+  right_ring_finger: { hex:"#fbe9a4", image:"./images/right-ring.png", keys:["o","l","9"] },
+  right_pinky: { hex:"#a4aaa2", image:"./images/right-pinky.png", keys:["p",";","0"] },
+  thumbs: { hex:"#ffffff", image:"./images/left-thumb.png", keys:[" "] }
+};
+
+function start() {
+  text = document.getElementById("inputText").value;
+  index = 0;
+
+  const display = document.getElementById("textDisplay");
+  display.innerHTML = "";
+
+  spans = [];
+
+  for (let i = 0; i < text.length; i++) {
+    const s = document.createElement("span");
+    s.textContent = text[i];
+    display.appendChild(s);
+    spans.push(s);
+  }
+
+  updateUI();
+}
+
+/* ----------------------------
+   NO RESET / NO BLOCKING LOGIC
+-----------------------------*/
+document.addEventListener("keydown", (e) => {
+  if (index >= text.length) return;
+
+  index++;           // ALWAYS progress, even wrong key
+  updateUI();
+});
+
+/* ----------------------------
+   UI UPDATE
+-----------------------------*/
+function updateUI() {
+  spans.forEach((s, i) => {
+    s.className = i < index ? "done" : (i === index ? "current" : "");
+  });
+
+  const currentChar = text[index] || " ";
+  const finger = getFinger(currentChar);
+
+  const label = document.getElementById("fingerLabel");
+  const cutout = document.getElementById("fingerCutout");
+
+  if (!finger) return;
+
+  label.textContent = "Use finger highlighted";
+  cutout.src = finger.image;
+  cutout.style.filter = colorizeWhiteImage(finger.hex);
+}
+
+function getFinger(char) {
+  char = char.toLowerCase();
+
+  for (const f of Object.values(fingerMap)) {
+    if (f.keys.includes(char)) return f;
+  }
+  return fingerMap.thumbs;
+}
+
+/* ----------------------------
+   YOUR COLOR FUNCTION
+-----------------------------*/
+function colorizeWhiteImage(hex) {
+  const { r, g, b } = hexToRgb(hex);
+
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+      case gNorm: h = (bNorm - rNorm) / d + 2; break;
+      case bNorm: h = (rNorm - gNorm) / d + 4; break;
+    }
+
+    h *= 60;
+  }
+
+  return `
+    brightness(0)
+    saturate(100%)
+    invert(100%)
+    sepia(100%)
+    saturate(5000%)
+    hue-rotate(${h}deg)
+    brightness(${l * 2})
+  `;
+}
+
+function hexToRgb(hex) {
+  hex = hex.replace("#", "");
+  return {
+    r: parseInt(hex.substring(0, 2), 16),
+    g: parseInt(hex.substring(2, 4), 16),
+    b: parseInt(hex.substring(4, 6), 16),
+  };
+}
+</script>
+
+</body>
+</html>
