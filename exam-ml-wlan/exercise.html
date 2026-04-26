@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Exercise</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.question {
+    background: #111827;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+textarea {
+    width: 100%;
+    height: 140px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #1f2937;
+    color: white;
+    border: 1px solid #334155;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #38bdf8;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.section {
+    margin-top: 25px;
+    text-align: left;
+    background: #111827;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.entry {
+    padding: 8px 0;
+    border-top: 1px solid #223;
+}
+
+.meta {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.toggle {
+    margin-top: 20px;
+    cursor: pointer;
+    color: #38bdf8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div id="question" class="question"></div>
+
+    <textarea id="answer" placeholder="Write your answer..."></textarea>
+    <button onclick="submitAnswer()">Submit Answer</button>
+
+    <div class="toggle" onclick="toggle()">Show/Hide Answers & Comments</div>
+
+    <div id="panel" style="display:none;">
+
+        <div class="section">
+            <h3>Answers</h3>
+            <div id="answers"></div>
+        </div>
+
+        <div class="section">
+            <h3>Comments</h3>
+            <div id="comments"></div>
+
+            <input id="commentInput"
+                   placeholder="Add comment..."
+                   style="width:100%;padding:10px;margin-top:10px;
+                          background:#1f2937;color:white;border:1px solid #334155;">
+            <button onclick="submitComment()">Add Comment</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const API = "https://quiz-api.leanderziehm.com";
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+const question = params.get("q");
+
+document.getElementById("question").textContent = question;
+
+let username = localStorage.getItem("username");
+
+function toggle() {
+    const p = document.getElementById("panel");
+    p.style.display = p.style.display === "none" ? "block" : "none";
+}
+
+// -------------------- ANSWERS --------------------
+
+async function loadAnswers() {
+    const res = await fetch(`${API}/answers/${id}`);
+    const data = await res.json();
+
+    const box = document.getElementById("answers");
+    box.innerHTML = "";
+
+    data.forEach(a => {
+        const div = document.createElement("div");
+        div.className = "entry";
+
+        div.innerHTML = `
+            <div>${a.content}</div>
+            <div class="meta">
+                by ${a.username} • ${new Date(a.created_at).toLocaleString()}
+            </div>
+        `;
+
+        box.appendChild(div);
+    });
+}
+
+async function submitAnswer() {
+    const content = document.getElementById("answer").value;
+
+    if (!username) {
+    username = prompt("Enter username:");
+    localStorage.setItem("username", username);
+    }
+
+
+    await fetch(`${API}/answers`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            question_id: id,
+            username,
+            content
+        })
+    });
+
+    document.getElementById("answer").value = "";
+    loadAnswers();
+}
+
+// -------------------- COMMENTS --------------------
+
+async function loadComments() {
+    const res = await fetch(`${API}/comments/${id}`);
+    const data = await res.json();
+
+    const box = document.getElementById("comments");
+    box.innerHTML = "";
+
+    data.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "entry";
+
+        div.innerHTML = `
+            <div>${c.content}</div>
+            <div class="meta">
+                ${c.username} • ${new Date(c.created_at).toLocaleString()}
+            </div>
+        `;
+
+        box.appendChild(div);
+    });
+}
+
+async function submitComment() {
+    const input = document.getElementById("commentInput");
+
+    await fetch(`${API}/comments`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            question_id: id,
+            username,
+            content: input.value
+        })
+    });
+
+    input.value = "";
+    loadComments();
+}
+
+// -------------------- INIT --------------------
+
+loadAnswers();
+loadComments();
+
+</script>
+
+</body>
+</html>
